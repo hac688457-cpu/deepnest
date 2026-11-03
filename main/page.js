@@ -1234,6 +1234,19 @@ ready(async function () {
 
     };
 
+    document.querySelector('#exportcncdxf').onclick = function () {
+        const selected = window.DeepNest.nests.find(n => n.selected);
+        if (!selected) { message('Select a nesting result first', true); return; }
+        let filename = dialog.showSaveDialogSync({title: 'Export CNC DXF R12 (mm)', filters: [{name: 'DXF', extensions: ['dxf']}]});
+        if (!filename) return;
+        if (!filename.toLowerCase().endsWith('.dxf')) filename += '.dxf';
+        try {
+            const gap = config.getSync('exportWithSheetsSpace') ? config.getSync('exportWithSheetsSpaceValue') : 0;
+            const dxf = require('./cnc-dxf.js')(selected, window.DeepNest.parts, config.getSync('scale'), !!config.getSync('exportWithSheetBoundboarders'), gap, window.SvgParser, GeometryUtil);
+            fs.writeFileSync(filename, dxf);
+        } catch (err) { message('CNC DXF export failed: ' + err.message, true); }
+    };
+
     var exportdxf = document.querySelector('#exportdxf');
     exportdxf.onclick = function () {
         var fileName = dialog.showSaveDialogSync({
