@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><pre id="result">NOT_RUN</pre>
+<script src="/main/util/pathsegpolyfill.js"></script>
+<script src="/main/util/clipper.js"></script>
+<script src="/main/util/geometryutil.js"></script>
+<script>window.config = {getSync: () => false}; window.require = () => ({simplifyPolygon: () => {throw Error('nest simplification is unavailable in this test')}}); window.module = {};</script>
+<script src="/main/cnc-dxf.js"></script>
+<script type="module">
+import {SvgParser} from '/main/svgparser.js';
+import {DeepNest} from '/main/deepnest.js';
+try {
+  const source = await (await fetch('/source.svg')).text();
+  const original = new DOMParser().parseFromString(source, 'image/svg+xml');
+  if (original.querySelector('parsererror')) throw Error('Invalid source SVG');
+  const inputPaths = original.querySelectorAll('path').length;
+  window.SvgParser = new SvgParser();
+  const deepnest = new DeepNest(null);
+  const parts = deepnest.importsvg('shelf.svg', null, source, null, false);
+  const cleaned = [...window.SvgParser.svgRoot.children].filter(el => window.SvgParser.allowedElements.includes(el.tagName));
+  const retained = parts.flatMap(part => part.svgelements);
+  if (!inputPaths || !parts.length || cleaned.length !== retained.length || new Set(retained).size !== cleaned.length || cleaned.some(el => !retained.includes(el))) throw Error(`Geometry lost: input paths ${inputPaths}, cleaned ${cleaned.length}, retained ${retained.length}, missing ${cleaned.filter(el => !retained.includes(el)).map(el => el.outerHTML.slice(0,160)).join(" | ")}`);
+  const sheet = {bounds:{x:0,y:0,width:100000,height:100000}, svgelements:[]};
+  const placements = parts.map((part, i) => ({source:i+1,x:0,y:0,rotation:0}));
+  const dxf = module.exports({placements:[{sheet:0,sheetplacements:placements}]}, [sheet,...parts], 72, false, 0, window.SvgParser, GeometryUtil);
+  document.querySelector('#result').textContent = JSON.stringify({ok:true,inputPaths,cleaned:cleaned.length,parts:parts.length,retained:retained.length,dxf:btoa(dxf)});
+} catch (error) { document.querySelector('#result').textContent = JSON.stringify({ok:false,error:error.stack || String(error)}); }
+</script>
