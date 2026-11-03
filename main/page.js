@@ -123,7 +123,11 @@ ready(async function () {
                     var tempid = config.getSync('id_token');
 
                     // Apply preset settings
-                    config.setSync(JSON.parse(presetConfig));
+                    const preset = JSON.parse(presetConfig);
+                    if (!validSheetMargin(preset.sheetEdgeMargin)) {
+                        preset.sheetEdgeMargin = defaultconfig.sheetEdgeMargin;
+                    }
+                    config.setSync(preset);
 
                     // Restore user profile
                     config.setSync('access_token', tempaccess);
@@ -201,11 +205,13 @@ ready(async function () {
     // config form
 
     const defaultConversionServer = 'https://converter.deepnest.app/convert';
+    const validSheetMargin = value => (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) && Number.isFinite(Number(value)) && Number(value) >= 0;
 
     var defaultconfig = {
         units: 'inch',
         scale: 72, // actual stored value will be in units/inch
         spacing: 0,
+        sheetEdgeMargin: 4 / 25.4, // physical inches
         curveTolerance: 0.72, // store distances in native units
         rotations: 4,
         threads: 4,
@@ -248,6 +254,9 @@ ready(async function () {
         }
     }
 
+    if (!validSheetMargin(config.sheetEdgeMargin)) {
+        config.setSync('sheetEdgeMargin', defaultconfig.sheetEdgeMargin);
+    }
     var cfgvalues = config.getSync();
     window.DeepNest.config(cfgvalues);
     updateForm(cfgvalues);
@@ -262,6 +271,14 @@ ready(async function () {
 
             var val = i.value;
             var key = i.getAttribute('data-config');
+
+            if (key == 'sheetEdgeMargin') {
+                if (!i.validity.valid || val === '' || !Number.isFinite(Number(val))) {
+                    updateForm(config.getSync());
+                    return;
+                }
+                val = Number(val) / (config.getSync('units') == 'mm' ? 25.4 : 1);
+            }
 
             if (key == 'scale') {
                 if (config.getSync('units') == 'mm') {
@@ -366,6 +383,9 @@ ready(async function () {
             var key = i.getAttribute('data-config');
             if (key == 'units' || key == 'scale') {
                 return;
+            }
+            else if (key == 'sheetEdgeMargin') {
+                i.value = c.sheetEdgeMargin * (c.units == 'mm' ? 25.4 : 1);
             }
             else if (i.getAttribute('data-conversion') == 'true') {
                 i.value = c[i.getAttribute('data-config')] / scale.value;
@@ -1123,7 +1143,13 @@ ready(async function () {
 
                 deleteCache();
 
-                window.DeepNest.start(null, displayCallback.bind(window));
+                try {
+                    window.DeepNest.start(null, displayCallback.bind(window));
+                } catch (error) {
+                    message(error.message, true);
+                    document.querySelector('#main').className = 'active';
+                    document.querySelector('#nest').className = '';
+                }
                 return;
             }
         }

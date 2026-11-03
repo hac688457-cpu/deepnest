@@ -75,6 +75,15 @@ test("Nest", async ({}, testInfo) => {
     await configTab.getByRole("link", { name: "set all to default" }).click();
     await test.step("units mm", () =>
       configTab.getByRole("radio").nth(1).check());
+    const margin = configTab.locator('[data-config="sheetEdgeMargin"]');
+    await expect(margin).toHaveValue("4");
+    await margin.fill("10");
+    await margin.blur();
+    await expect(margin).toHaveValue("10");
+    await configTab.getByRole("radio").first().check();
+    expect(Number(await margin.inputValue())).toBeCloseTo(10 / 25.4);
+    await configTab.getByRole("radio").nth(1).check();
+    await expect(margin).toHaveValue("10");
     await test.step("spacing 10mm", async () => {
       await configTab.getByRole("spinbutton").first().fill("10");
       await configTab.getByRole("spinbutton").first().blur();

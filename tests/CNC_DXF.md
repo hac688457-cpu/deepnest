@@ -15,3 +15,9 @@ node tests/cnc-dxf.test.cjs
 ```
 
 The SVG path is an optional local input and is never copied into the repository. The Python check requires ezdxf and is specific to the named shelf; the browser harness also accepts other absolute SVG paths. It exercises the actual browser SVG parser, `DeepNest.importsvg`/part extraction, and CNC exporter with zero-offset synthetic placements; it asserts that every cleaned geometry element is retained. A throwing stub supplies the unused native nesting simplifier. The ezdxf check audits R12 and checks the first rib's dimensions and a slot point in mm. It does not prove all geometry matches the source, run nesting, test the Electron window/export menu, or replace CAM inspection.
+
+## Sheet-edge margin
+
+In Nesting configuration, **Minimum sheet-edge margin** is the minimum distance from the real part outline to the physical sheet outline. It defaults to 4 mm and is saved with settings and presets; old settings and presets use 4 mm. The field follows the displayed mm/inch units. Keep the sheet at its physical dimensions, for example 2500 × 1250 mm. Part-to-part spacing remains independent: the solver compensates for the half-spacing already included around parts, so an 8 mm spacing does not add another 4 mm to the margin.
+
+The solver uses its existing polygon approximation and curve tolerance; inspect results in CAM before machining. A margin smaller than half the part spacing requires a rectangular sheet. A margin that eliminates or disconnects the usable sheet is rejected. Run `node tests/sheet-margin.test.cjs` after installing dependencies to exercise solver placement, rotations, unit scales and multiple sheets.

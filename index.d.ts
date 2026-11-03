@@ -2,6 +2,7 @@ export type DeepNestConfig = {
   units: "mm" | "inch";
   scale: number;
   spacing: number;
+  sheetEdgeMargin: number; // physical inches in settings; native units in solver
   curveTolerance: number;
   clipperScale: number;
   rotations: number;

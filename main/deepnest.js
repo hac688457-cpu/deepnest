@@ -12,6 +12,7 @@ var config = {
   clipperScale: 10000000,
   curveTolerance: 0.3,
   spacing: 0,
+  sheetEdgeMargin: 4 * 72 / 25.4,
   rotations: 4,
   populationSize: 10,
   mutationRate: 10,
@@ -516,6 +517,11 @@ export class DeepNest {
 
     if ("spacing" in c) {
       config.spacing = parseFloat(c.spacing);
+    }
+
+    if ((typeof c.sheetEdgeMargin === "number" || (typeof c.sheetEdgeMargin === "string" && c.sheetEdgeMargin.trim() !== "")) && Number.isFinite(Number(c.sheetEdgeMargin)) && Number(c.sheetEdgeMargin) >= 0) {
+      var scale = Number(c.scale);
+      config.sheetEdgeMargin = Number(c.sheetEdgeMargin) * (Number.isFinite(scale) && scale > 0 ? scale : config.scale);
     }
 
     if (c.rotations && parseInt(c.rotations) > 0) {
@@ -1026,6 +1032,22 @@ export class DeepNest {
           this.simplifyPolygon.bind(this),
           true
         );
+        // Parts already include half the spacing; adjust only the remaining sheet clearance.
+        var sheetOffset = 0.5 * config.spacing - config.sheetEdgeMargin;
+        if (Math.abs(sheetOffset) > 1e-9) {
+          if (sheetOffset > 0) {
+            var bounds = GeometryUtil.getPolygonBounds(parts[i].polygontree);
+            var area = Math.abs(GeometryUtil.polygonArea(parts[i].polygontree));
+            if (Math.abs(area - bounds.width * bounds.height) > 1e-7 * bounds.width * bounds.height) {
+              throw new Error("A sheet-edge margin below half the part spacing requires a rectangular sheet.");
+            }
+          }
+          var sheetPaths = this.polygonOffset(parts[i].polygontree, sheetOffset);
+          if (sheetPaths.length !== 1) {
+            throw new Error("Sheet edge margin leaves an invalid or disconnected usable sheet.");
+          }
+          Array.prototype.splice.apply(parts[i].polygontree, [0, parts[i].polygontree.length].concat(sheetPaths[0]));
+        }
       } else {
         offsetTree(
           parts[i].polygontree,
