@@ -31,3 +31,29 @@ console.log('CNC_DXF_TEST_OK');
 
 const open = path([seg('M',{x:0,y:0}),seg('L',{x:10,y:0})]);
 assert.throws(() => make({placements:[{sheet:0,sheetplacements:[{source:2,x:0,y:0,rotation:0}]}]}, [...parts,{svgelements:[open]}],72,false,0,parser,geometry), /Open outer contour/);
+
+const secondSheet = {bounds:{x:50*factor,y:30*factor,width:800*factor,height:600*factor},svgelements:[rectangle(50*factor,30*factor,800*factor,600*factor)]};
+const multiParts = [...parts, secondSheet];
+const multiNest = {placements:[nest.placements[0], {sheet:2,sheetplacements:[{source:1,x:70*factor,y:40*factor,rotation:90}]}, {sheet:2,sheetplacements:[]}]};
+const sheets = make.sheets(multiNest,multiParts,72,true,parser,geometry);
+assert.equal(sheets.length,2);
+assert.equal(sheets[0],dxf);
+assert.equal((sheets[1].match(/\nPOLYLINE\n/g)||[]).length,3);
+assert.equal((sheets[1].match(/\nPART_1_1\n66\n1/g)||[]).length,2);
+assert.equal((make.sheets(multiNest,multiParts,72,false,parser,geometry)[1].match(/\nPOLYLINE\n/g)||[]).length,2);
+fs.writeFileSync('/tmp/deepnest-sheet-01.dxf',sheets[0]);
+fs.writeFileSync('/tmp/deepnest-sheet-02.dxf',sheets[1]);
+const save = require('../main/cnc-dxf-save.js');
+const dir = fs.mkdtempSync('/tmp/deepnest-export-');
+try {
+  assert.throws(() => save(dir, []), /No sheets/);
+  fs.writeFileSync(dir + '/sheet_02.dxf', 'existing');
+  assert.throws(() => save(dir, sheets), /EEXIST/);
+  assert.equal(fs.readFileSync(dir + '/sheet_02.dxf','utf8'),'existing');
+  assert.equal(fs.existsSync(dir + '/sheet_01.dxf'),false);
+  fs.unlinkSync(dir + '/sheet_02.dxf');
+  save(dir, sheets);
+  assert.deepEqual(fs.readdirSync(dir).sort(), ['sheet_01.dxf','sheet_02.dxf']);
+  assert.equal(fs.readFileSync(dir + '/sheet_02.dxf','utf8'),sheets[1]);
+} finally { fs.rmSync(dir,{recursive:true,force:true}); }
+console.log('CNC_DXF_SHEETS_TEST_OK');

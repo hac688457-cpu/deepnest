@@ -21,6 +21,8 @@ try {
   const sheet = {bounds:{x:0,y:0,width:100000,height:100000}, svgelements:[]};
   const placements = parts.map((part, i) => ({source:i+1,x:0,y:0,rotation:0}));
   const dxf = module.exports({placements:[{sheet:0,sheetplacements:placements}]}, [sheet,...parts], 72, false, 0, window.SvgParser, GeometryUtil);
+  const separate = module.exports.sheets({placements:[{sheet:0,sheetplacements:placements}]}, [sheet,...parts], 72, false, window.SvgParser, GeometryUtil);
+  if (separate.length !== 1 || separate[0] !== dxf) throw Error('Separate sheet differs from combined export');
   document.querySelector('#result').textContent = JSON.stringify({ok:true,inputPaths,cleaned:cleaned.length,parts:parts.length,retained:retained.length,dxf:btoa(dxf)});
 } catch (error) { document.querySelector('#result').textContent = JSON.stringify({ok:false,error:error.stack || String(error)}); }
 </script>

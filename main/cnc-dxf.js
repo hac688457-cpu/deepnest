@@ -74,3 +74,9 @@ module.exports = function cncDxf(nest, parts, scale, withSheets, sheetGap, parse
     if (!entities.length) throw Error('No geometry to export');
     return ['0','SECTION','2','HEADER','9','$ACADVER','1','AC1009','0','ENDSEC','0','SECTION','2','ENTITIES',...entities,'0','ENDSEC','0','EOF',''].join('\n');
 };
+
+// Each non-empty sheet uses the same geometry conversion without the combined layout offset.
+module.exports.sheets = function (nest, parts, scale, withSheets, parser, geometry) {
+    return nest.placements.filter(sheet => sheet.sheetplacements.length).map(sheet =>
+        module.exports({placements:[sheet]}, parts, scale, withSheets, 0, parser, geometry));
+};

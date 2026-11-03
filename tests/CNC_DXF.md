@@ -21,3 +21,9 @@ The SVG path is an optional local input and is never copied into the repository.
 In Nesting configuration, **Minimum sheet-edge margin** is the minimum distance from the real part outline to the physical sheet outline. It defaults to 4 mm and is saved with settings and presets; old settings and presets use 4 mm. The field follows the displayed mm/inch units. Keep the sheet at its physical dimensions, for example 2500 × 1250 mm. Part-to-part spacing remains independent: the solver compensates for the half-spacing already included around parts, so an 8 mm spacing does not add another 4 mm to the margin.
 
 The solver uses its existing polygon approximation and curve tolerance; inspect results in CAM before machining. A margin smaller than half the part spacing requires a rectangular sheet. A margin that eliminates or disconnects the usable sheet is rejected. Run `node tests/sheet-margin.test.cjs` after installing dependencies to exercise solver placement, rotations, unit scales and multiple sheets.
+
+## Separate-sheet export
+
+**CNC DXF R12 - one file per sheet** asks for a destination folder and writes `sheet_01.dxf`, `sheet_02.dxf`, and so on in nesting order, skipping sheets without placed parts. Existing files are never overwritten; choose another folder or move those files first. If a write fails, files created by that attempt are removed where possible and any cleanup failure is reported. Output is generated before writing begins.
+
+Coordinates are in millimeters at 1:1. Each sheet uses its bounding box's upper-left corner as (0, 0), with DXF Y increasing upward, so sheet geometry normally has negative Y coordinates. There is no offset inherited from preceding sheets. The existing **export with sheet boundaries** setting controls the separate `SHEET_BOUNDARIES` layer; it is not a part machining layer. Disable that layer in CAM before generating toolpaths if boundaries are included.

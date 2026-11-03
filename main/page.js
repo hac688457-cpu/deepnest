@@ -1273,6 +1273,18 @@ ready(async function () {
         } catch (err) { message('CNC DXF export failed: ' + err.message, true); }
     };
 
+    document.querySelector('#exportcncdxfsheets').onclick = function () {
+        const selected = window.DeepNest.nests.find(n => n.selected);
+        if (!selected) { message('Select a nesting result first', true); return; }
+        const directories = dialog.showOpenDialogSync({title: 'Choose folder for CNC DXF sheets', properties: ['openDirectory', 'createDirectory']});
+        if (!directories || !directories.length) return;
+        try {
+            const sheets = require('./cnc-dxf.js').sheets(selected, window.DeepNest.parts, config.getSync('scale'), !!config.getSync('exportWithSheetBoundboarders'), window.SvgParser, GeometryUtil);
+            require('./cnc-dxf-save.js')(directories[0], sheets);
+            dialog.showMessageBoxSync({type:'info', message:'Exported ' + sheets.length + ' CNC DXF sheet file(s)', detail:directories[0]});
+        } catch (err) { dialog.showMessageBoxSync({type:'error', message:'CNC DXF sheet export failed', detail:err.message}); }
+    };
+
     var exportdxf = document.querySelector('#exportdxf');
     exportdxf.onclick = function () {
         var fileName = dialog.showSaveDialogSync({
