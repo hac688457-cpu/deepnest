@@ -26,6 +26,9 @@ assert.equal((make(nest,parts,72,false,0,parser,geometry).match(/\nPOLYLINE\n/g)
 const arc = path([seg('M',{x:0,y:0}),seg('A',{x:factor*20,y:0,r1:factor*10,r2:factor*10,angle:0,largeArcFlag:0,sweepFlag:1}),seg('L',{x:0,y:0})]);
 const curved = make({placements:[{sheet:0,sheetplacements:[{source:2,x:0,y:0,rotation:0}]}]}, [...parts,{svgelements:[arc]}],72,false,0,parser,geometry);
 assert.ok((curved.match(/\nVERTEX\n/g)||[]).length > 10);
+const near = path([seg('M',{x:0,y:0}),seg('L',{x:factor*10,y:0}),seg('L',{x:factor*(10-1e-7),y:0}),seg('L',{x:factor*10,y:factor*10}),seg('L',{x:0,y:factor*10}),seg('Z')]);
+const nearDxf = make({placements:[{sheet:0,sheetplacements:[{source:2,x:0,y:0,rotation:0}]}]}, [...parts,{svgelements:[near]}],72,false,0,parser,geometry);
+assert.equal((nearDxf.match(/\nVERTEX\n/g)||[]).length, 4);
 fs.writeFileSync(process.argv[2] || '/tmp/deepnest-cnc-test.dxf', dxf);
 console.log('CNC_DXF_TEST_OK');
 

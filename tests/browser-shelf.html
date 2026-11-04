@@ -13,6 +13,31 @@ try {
   if (original.querySelector('parsererror')) throw Error('Invalid source SVG');
   const inputPaths = original.querySelectorAll('path').length;
   window.SvgParser = new SvgParser();
+  // Browser arc sampling independently checks reflected elliptical arcs and sweep flags.
+  for (const sweep of [0, 1]) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.innerHTML = `<path d="M 10 5 A 30 12 35 0 ${sweep} 55 25" transform="translate(100 80) scale(1 -1)"/>`;
+    document.body.appendChild(svg);
+    const path = svg.firstElementChild, original = path.cloneNode();
+    svg.appendChild(original);
+    window.SvgParser.svg = svg;
+    window.SvgParser.applyTransform(path, '', false, false);
+    const length = original.getTotalLength();
+    if (Math.abs(path.getTotalLength() - length) > 0.001) throw Error('Reflected arc length changed');
+    for (let i = 0; i <= 100; i++) {
+      const a = original.getPointAtLength(length*i/100), b = path.getPointAtLength(length*i/100);
+      if (Math.hypot(100+a.x-b.x, 80-a.y-b.y) > 0.002) throw Error('Reflected arc differs from browser geometry');
+    }
+    svg.remove();
+  }
+  const arcEnd = {x: 55, y: 25};
+  const arcPoints = GeometryUtil.Arc.linearize({x:10,y:5}, arcEnd, 30, 12, 35, 0, 1, 0.005);
+  if (arcPoints.at(-1) !== arcEnd || Math.hypot(arcPoints.at(-2).x-arcEnd.x, arcPoints.at(-2).y-arcEnd.y) < 0.000001) throw Error('Arc endpoint duplicated');
+  const singleArc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  singleArc.setAttribute('d', 'M 0 0 A 10 10 0 0 1 10 10');
+  window.SvgParser.conf.tolerance = 1000;
+  if (!window.SvgParser.polygonifyPath(singleArc).some(p => p.x === 10 && p.y === 10)) throw Error('Solver polygon lost arc endpoint');
+  window.SvgParser.conf.tolerance = 2;
   const deepnest = new DeepNest(null);
   const parts = deepnest.importsvg('shelf.svg', null, source, null, false);
   const cleaned = [...window.SvgParser.svgRoot.children].filter(el => window.SvgParser.allowedElements.includes(el.tagName));

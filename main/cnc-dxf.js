@@ -10,7 +10,7 @@ module.exports = function cncDxf(nest, parts, scale, withSheets, sheetGap, parse
         const add = p => {
             if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) throw Error('Invalid geometry in ' + tag);
             const last = points[points.length - 1];
-            if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 1e-9) points.push(p);
+            if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 1e-6/mm) points.push(p);
         };
         if (tag === 'path') {
             const path = element.cloneNode(false);

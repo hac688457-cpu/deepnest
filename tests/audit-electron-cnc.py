@@ -34,7 +34,7 @@ for file, sheet in zip(files, sheets):
     clearance = min(physical.boundary.distance(p) for p in polygons)
     spacing = min((a.distance(b) for a, b in itertools.combinations(polygons, 2)), default=math.inf)
     overlap = sum(a.intersection(b).area for a, b in itertools.combinations(polygons, 2))
-    assert clearance >= margin - 0.05 and spacing >= 8 - 0.05 and overlap < 1e-6
+    assert clearance >= margin - 0.001 and spacing >= 8 - 0.001 and overlap < 1e-6
     for e, placement in zip(entities, placements):
         source = data['parts'][placement['source']]['bounds']
         x = [v.dxf.location.x for v in e.vertices]

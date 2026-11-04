@@ -967,6 +967,7 @@ export class SvgParser {
 		//console.log(element.tagName, transformString, transform.toArray());
 
 		var tarray = transform.toArray();
+		var reflected = tarray[0]*tarray[3] - tarray[1]*tarray[2] < 0;
 
 		// decompose affine matrix to rotate, scale components (translate is just the 3rd column)
 		var rotate = Math.atan2(tarray[1], tarray[3])*180/Math.PI;
@@ -1037,8 +1038,8 @@ export class SvgParser {
 							    var arcsweep =  (rotate == 180) ? !s.sweepFlag : s.sweepFlag;
 							}
 							else{
-							    var arcrotate = s.angle + rotate;
-							    var arcsweep = s.sweepFlag;
+							    var arcrotate = reflected ? Math.atan2(tarray[1], tarray[0])*180/Math.PI - s.angle : s.angle + rotate;
+							    var arcsweep = reflected ? !s.sweepFlag : s.sweepFlag;
 							}
 
 							seglist.replaceItem(element.createSVGPathSegArcAbs(s.x,s.y,s.r1*scale,s.r2*scale,arcrotate,s.largeArcFlag,arcsweep),i);
@@ -1151,8 +1152,8 @@ export class SvgParser {
 							s = seglist.getItem(i);
 						}
 						else if(command == 'A'){
-							var arcrotate = s.angle + rotate;
-							var arcsweep = s.sweepFlag;
+							var arcrotate = reflected ? Math.atan2(tarray[1], tarray[0])*180/Math.PI - s.angle : s.angle + rotate;
+							var arcsweep = reflected ? !s.sweepFlag : s.sweepFlag;
 
 							seglist.replaceItem(element.createSVGPathSegArcAbs(s.x,s.y,s.r1*scale,s.r2*scale,arcrotate,s.largeArcFlag,arcsweep),i);
 							s = seglist.getItem(i);
@@ -1557,7 +1558,6 @@ export class SvgParser {
 				case 'a':
 				case 'A':
 					var pointlist = GeometryUtil.Arc.linearize({x: prevx, y: prevy}, {x: x, y: y}, s.r1, s.r2, s.angle, s.largeArcFlag,s.sweepFlag, this.conf.tolerance);
-					pointlist.shift();
 
 					for(var j=0; j<pointlist.length; j++){
 						var point = {};

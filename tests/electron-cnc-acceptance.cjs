@@ -14,7 +14,7 @@ for (const d of ['home','config','cache','run']) fs.mkdirSync(path.join(root,d),
 (async () => {
  let app, page;
  try {
-  app = await _electron.launch({executablePath:appPath, args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage'], timeout:30000, env:{...process.env, DISPLAY:':97', XDG_SESSION_TYPE:'x11', WAYLAND_DISPLAY:'', ELECTRON_DISABLE_GPU:'1', HOME:path.join(root,'home'), XDG_CONFIG_HOME:path.join(root,'config'), XDG_CACHE_HOME:path.join(root,'cache'), SAVE_PLACEMENTS_PATH:path.join(root,'run')}});
+  app = await _electron.launch({executablePath:appPath, args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage'], timeout:30000, env:{...process.env, DISPLAY:process.env.DISPLAY || ':97', XDG_SESSION_TYPE:'x11', WAYLAND_DISPLAY:'', ELECTRON_DISABLE_GPU:'1', HOME:path.join(root,'home'), XDG_CONFIG_HOME:path.join(root,'config'), XDG_CACHE_HOME:path.join(root,'cache'), SAVE_PLACEMENTS_PATH:path.join(root,'run')}});
   app.on('window', p => {p.on('console', m => fs.appendFileSync(path.join(out,'console.log'), `${m.type()} ${m.text()}\n`)); p.on('pageerror', e => fs.appendFileSync(path.join(out,'console.log'), `ERROR ${e.stack}\n`));});
   page = await app.firstWindow();
   await page.waitForSelector('#config_tab', {timeout:30000});
