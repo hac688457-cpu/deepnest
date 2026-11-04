@@ -27,3 +27,18 @@ The solver uses its existing polygon approximation and curve tolerance; inspect 
 **CNC DXF R12 - one file per sheet** asks for a destination folder and writes `sheet_01.dxf`, `sheet_02.dxf`, and so on in nesting order, skipping sheets without placed parts. Existing files are never overwritten; choose another folder or move those files first. If a write fails, files created by that attempt are removed where possible and any cleanup failure is reported. Output is generated before writing begins.
 
 Coordinates are in millimeters at 1:1. Each sheet uses its bounding box's upper-left corner as (0, 0), with DXF Y increasing upward, so sheet geometry normally has negative Y coordinates. There is no offset inherited from preceding sheets. The existing **export with sheet boundaries** setting controls the separate `SHEET_BOUNDARIES` layer; it is not a part machining layer. Disable that layer in CAM before generating toolpaths if boundaries are included.
+
+## Packaged Electron acceptance on an isolated X server
+
+Start an isolated X server on `:97` before running this test. It never uses the desktop on `:0`. The default executable is `/tmp/deepnest-acceptance-build/deepnest-v1.5.6-linux-x64/deepnest-v1.5.6`; set `DEEPNEST_APP` to another packaged executable if necessary. Set `DEEPNEST_SVG` to the representative 1200 × 720 sphere shelf SVG if it is not at the default local path. Node dependencies must already be installed. The test uses isolated HOME, XDG config/cache and nesting directories under `/tmp/deepnest-cnc-gui-acceptance`.
+
+```
+MARGIN=4 node tests/electron-cnc-acceptance.cjs
+MARGIN=10 node tests/electron-cnc-acceptance.cjs
+MULTI=3 MARGIN=4 node tests/electron-cnc-acceptance.cjs
+python3 tests/audit-electron-cnc.py 4
+python3 tests/audit-electron-cnc.py 10
+python3 tests/audit-electron-cnc.py 4 multi
+```
+
+The audit requires `ezdxf` and `shapely`; a local `pip install --target /tmp/deepnest-cnc-gui-acceptance/python ezdxf shapely` and `PYTHONPATH=/tmp/deepnest-cnc-gui-acceptance/python` avoids global installation. The script imports the actual SVG, adds a 2500 × 1250 mm sheet, runs the native solver with 8 mm spacing and clicks both CNC export menu entries. `MULTI` sets the quantity of every part and sheet. It mocks open/save/message dialogs and writes screenshots, logs, nesting data and DXFs under the temporary acceptance directory, replacing its own prior outputs. The audit is specific to the default shelf: one closed outline per part, with slots on the outline, no sheet boundaries, and 90-degree rotation increments. It checks R12, audit errors, counts, bounds, intersections and clearance, but does not establish exact source-to-output contour equivalence or CAM suitability. Solver results and runtime vary; each run has a three-minute solver timeout.
