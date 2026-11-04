@@ -9,7 +9,7 @@ import ezdxf
 from shapely.geometry import Polygon, box
 
 margin = float(sys.argv[1])
-root = Path('/tmp/deepnest-cnc-gui-acceptance/output') / (f'margin-{margin:g}' + ('-multi' if len(sys.argv) > 2 else ''))
+root = Path('/tmp/deepnest-cnc-gui-acceptance/output') / ('mixed' if len(sys.argv) > 2 and sys.argv[2] == 'mixed' else f'margin-{margin:g}' + ('-multi' if len(sys.argv) > 2 else ''))
 data = json.loads((root / 'nest.json').read_text())
 nest = next(n for n in data['nests'] if n['selected'])
 sheets = nest['placements']
@@ -32,7 +32,7 @@ for file, sheet in zip(files, sheets):
     physical = box(0, -1250, 2500, 0)
     assert all(physical.covers(p) for p in polygons)
     clearance = min(physical.boundary.distance(p) for p in polygons)
-    spacing = min(a.distance(b) for a, b in itertools.combinations(polygons, 2))
+    spacing = min((a.distance(b) for a, b in itertools.combinations(polygons, 2)), default=math.inf)
     overlap = sum(a.intersection(b).area for a, b in itertools.combinations(polygons, 2))
     assert clearance >= margin - 0.05 and spacing >= 8 - 0.05 and overlap < 1e-6
     for e, placement in zip(entities, placements):

@@ -7,7 +7,7 @@ const root = '/tmp/deepnest-cnc-gui-acceptance';
 const appPath = process.env.DEEPNEST_APP || '/tmp/deepnest-acceptance-build/deepnest-v1.5.6-linux-x64/deepnest-v1.5.6';
 const svg = process.env.DEEPNEST_SVG || '/home/abd/Downloads/сфера/sphere_shelf_for_deepnest_Mspherical_W1200_H720_D160_R0_T12_v1.svg';
 const margin = Number(process.env.MARGIN || 4);
-const out = path.join(root, 'output', `margin-${margin}${process.env.MULTI ? '-multi' : ''}`);
+const out = path.join(root, 'output', process.env.MIXED ? 'mixed' : `margin-${margin}${process.env.MULTI ? '-multi' : ''}`);
 fs.mkdirSync(out, {recursive:true});
 for (const name of fs.readdirSync(out)) if (/^(sheet_\d+\.dxf|combined\.dxf|console\.log|dialogs\.log|failure\.png)$/.test(name)) fs.unlinkSync(path.join(out,name));
 for (const d of ['home','config','cache','run']) fs.mkdirSync(path.join(root,d), {recursive:true});
@@ -27,11 +27,23 @@ for (const d of ['home','config','cache','run']) fs.mkdirSync(path.join(root,d),
   assert(Math.abs(Number(await page.locator('[data-config=sheetEdgeMargin]').inputValue()) - margin) < 1e-9);
   await page.screenshot({path:path.join(out,'settings.png')});
   await page.click('#home_tab');
-  await app.evaluate(({dialog}, file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},svg);
-  await page.click('#import');
-  await page.waitForFunction(()=>window.DeepNest.parts.length>0, null,{timeout:60000});
+  const files = process.env.MIXED ? [
+    'sphere_shelf_for_deepnest_Mconstant_W1700_H1700_D250_R30_T12_v1.svg',
+    'sphere_shelf_for_deepnest_Mspherical_W1200_H720_D160_R0_T12_v1.svg',
+    'sphere_shelf_for_deepnest_Mspherical_W1500_H900_D200_R0_T12_v1.svg'
+  ].map(name => path.join('/home/abd/Downloads/сфера', name)) : [svg];
+  for (const [i, file] of files.entries()) {
+    await app.evaluate(({dialog}, file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},file);
+    await page.click('#import');
+    await page.waitForFunction(count=>window.DeepNest.imports.length===count, i+1,{timeout:60000});
+  }
+  if (process.env.MIXED) assert.equal(await page.evaluate(()=>window.DeepNest.parts.length), 32);
   console.log('Imported:',await page.evaluate(()=>window.DeepNest.parts.length));
   await page.click('#addsheet'); await page.fill('#sheetwidth','2500'); await page.fill('#sheetheight','1250'); await page.click('#confirmsheet');
+  if (process.env.MIXED) {
+    const input = page.locator('#parts tbody input[type=number]').last();
+    await input.fill('32'); await input.blur();
+  }
   if (process.env.MULTI) {
     for (const input of await page.locator('#parts tbody input[type=number]').all()) { await input.fill(process.env.MULTI); await input.blur(); }
   }
