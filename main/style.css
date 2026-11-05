@@ -372,36 +372,40 @@ h3 {
 
 #export_wrapper.active:hover ul.dropdown {
   opacity: 1;
-  height: 5em;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 ul.dropdown {
   display: flex;
   flex-direction: column;
   margin: 0;
-  padding: 1em 0 0 0;
+  padding: 0.5em 0;
   background-color: var(--bg-secondary);
   position: absolute;
-  top: 1.4em;
+  top: calc(100% - 0.2em);
   left: 0;
-  width: 100%;
+  width: max-content;
+  min-width: 24em;
+  box-sizing: border-box;
   z-index: 10;
   color: var(--text-secondary);
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   cursor: default;
-  overflow: hidden;
   opacity: 0;
-  height: 0;
-  transition: height 0.2s;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
 }
 
 ul.dropdown li {
   display: flex;
+  flex: 0 0 2.5em;
   align-items: center;
   list-style: none;
   padding: 0 1em;
-  height: 2.5em;
+  white-space: nowrap;
 }
 
 ul.dropdown li:hover {
