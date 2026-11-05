@@ -49,4 +49,23 @@ On `:97`, use `MIXED=1 MARGIN=4 timeout 260s node tests/electron-cnc-acceptance.
 
 Run `PYTHONPATH=/tmp/deepnest-cnc-gui-acceptance/python timeout 180s python3 -u tests/compare-mixed-svg.py`. Besides ezdxf and shapely it requires svgpathtools, scipy and svgwrite installed locally. It reads each original SVG path independently, samples all segments at intervals of at most 0.2 mm, applies the recorded placement rotation and aligns bounding boxes, and measures distances in both directions to the corresponding R12 contour. It verifies the file, part layer, source index and filename for each pairing. It covers the complete single contour for each of the 32 parts, including edge notches, slots and dogbone arcs; it checks shape, not absolute placement registration, and is a sampled comparison, not a formal continuous error bound. It fails if any measured deviation exceeds 0.05 mm. On the 27c4ee0 packaged build this check failed for all 32 parts (maximum sampled deviation 125.637046 mm). The SVG importer transformed arc endpoints through a reflection without reversing the sweep flag, changing the arcs before nesting and export. Chrome independently confirms the corrected sweep and angle on reflected ellipses. The arc linearizer also emitted an extra near-identical endpoint, and the exporter now drops consecutive points within 0.000001 mm to prevent microscopic self-intersections. The solver polygon consumer was updated to retain the first real arc point. These changes do not repair older DXF exports; re-import and re-nest the original SVGs. In the corrected Electron run, the maximum sampled deviation was 0.004380 mm over all 32 contours. The separate R12 sheets had 11, 12 and 9 valid closed contours, no overlap, minimum reported edge distances of 4.0000 mm and minimum spacings of 8.0000, 8.0000 and 8.0820 mm (the clearance audit allows 0.001 mm numerical tolerance). This is one sampled nesting run, not a guarantee for other layouts or a CAM/toolpath acceptance.
 
-`timeout 240s node tests/electron-native-dialog.cjs` attempts the actual native open and save dialogs on `:97`, using an xdotool executable and library extracted under `/tmp/deepnest-cnc-gui-acceptance/xdotool-root`. It copies the SVG to an ASCII-named temporary input, never replaces application dialogs, and writes only temporary output. On the isolated environment used for this audit, the open dialog did not complete and save was consequently not reached. The native-dialog test remains unverified; it is not evidence of a successful dialog round trip.
+For actual GTK open and save dialogs, use the same isolated X server and a
+private D-Bus session. Set `DEEPNEST_APP` to the package under test and, if
+necessary, `DEEPNEST_SVG` and `XDOTOOL`. The default xdotool path is the
+extracted binary in `/tmp/deepnest-cnc-gui-acceptance/xdotool-root`; its shared
+library is loaded from that tree. The script requires `DISPLAY=:97` and writes
+only under the temporary acceptance directory.
+
+```sh
+DISPLAY=:97 DEEPNEST_APP=/absolute/path/to/deepnest-v1.5.6 \
+  timeout 240s dbus-run-session -- node tests/electron-native-dialog.cjs
+```
+
+The script waits for each real GTK window, focuses it and enters temporary paths;
+it does not replace Electron dialogs. It dismisses Deepnest notification windows
+so they cannot steal focus. It imports the shelf, runs nesting, and saves one R12
+DXF. In the Snap-restricted test environment an empty D-Bus address left the
+open dialog unavailable; a private bus and memory-backed GTK settings made it
+appear. GTK needed a second Enter after accepting the location. Automation uses
+`--no-sandbox`; the distributed executable has no such launcher flag. The
+separate-sheet command is covered by the preceding test with mocked dialogs.

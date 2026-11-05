@@ -123,3 +123,24 @@ Create a zip file of this folder for a simple distribution.
 ## Debugging
 
 If the environment variable "deepnest_debug" has a value of "1", deepnest will open the browser dev tools (debugger/inspector).
+
+### Isolated Ubuntu x64 package
+
+From a clean, verified checkout, build in a separate temporary copy. The example
+reuses installed local dependencies; it does not install global packages. The
+isolated HOME needs the Electron headers required by `electron-rebuild` (or
+network access to obtain them). `electron-packager` uses the Electron version
+in `node_modules`.
+
+```sh
+mkdir -p /tmp/deepnest-cnc-final-ubuntu-release/{work,home,dist}
+git archive HEAD | tar -x -C /tmp/deepnest-cnc-final-ubuntu-release/work
+cp -a --reflink=auto node_modules /tmp/deepnest-cnc-final-ubuntu-release/work/
+cd /tmp/deepnest-cnc-final-ubuntu-release/work
+HOME=/tmp/deepnest-cnc-final-ubuntu-release/home npm run build
+HOME=/tmp/deepnest-cnc-final-ubuntu-release/home ./node_modules/.bin/electron-packager . deepnest-v1.5.6 --platform=linux --arch=x64 --out=/tmp/deepnest-cnc-final-ubuntu-release/dist --asar --ignore='^/tests' --ignore='^/examples'
+```
+
+Verify the packaged `resources/app.asar` against the intended source revision
+and run the isolated Electron acceptance in `tests/CNC_DXF.md`. Do not reuse an
+older package for release validation.
