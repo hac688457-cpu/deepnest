@@ -37,6 +37,7 @@ for (const d of ['home','config','cache','run']) fs.mkdirSync(path.join(root,d),
     await page.click('#import');
     await page.waitForFunction(count=>window.DeepNest.imports.length===count, i+1,{timeout:60000});
   }
+  if (process.env.EXPECT_PARTS) await page.waitForFunction(count => window.DeepNest.parts.length === count, Number(process.env.EXPECT_PARTS), {timeout:60000});
   if (process.env.MIXED) assert.equal(await page.evaluate(()=>window.DeepNest.parts.length), 32);
   console.log('Imported:',await page.evaluate(()=>window.DeepNest.parts.length));
   if (process.env.IMPORT_ONLY) {
