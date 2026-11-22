@@ -28,6 +28,8 @@ export type DeepNestConfig = {
   scale: number;
   /** Spacing between nested parts in SVG units */
   spacing: number;
+  /** Physical sheet-edge margin in inches. */
+  sheetEdgeMargin: number;
   /** Tolerance for curve approximation in polygonification */
   curveTolerance: number;
   /** Scale factor for Clipper.js integer operations */

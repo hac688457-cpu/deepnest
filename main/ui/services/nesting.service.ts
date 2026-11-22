@@ -468,6 +468,10 @@ export class NestingService {
       this.deepNest.start(progressCallback || null, displayCallback);
 
       return true;
+    } catch (error) {
+      this.switchToMainView();
+      message(`Could not start nesting: ${String(error)}`, true);
+      return false;
     } finally {
       this.isStarting = false;
     }

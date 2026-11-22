@@ -423,6 +423,7 @@
             todo.splice(0, 1, arc1, arc2);
           }
         }
+        finished.shift();
         return finished;
       },
 

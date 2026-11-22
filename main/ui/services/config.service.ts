@@ -25,6 +25,7 @@ export const DEFAULT_CONFIG: Readonly<UIConfig> = {
   units: "inch" as UnitType,
   scale: 72, // actual stored value will be in units/inch
   spacing: 0,
+  sheetEdgeMargin: 4 / 25.4,
   curveTolerance: 0.72, // store distances in native units
   clipperScale: 10000000,
   rotations: 4,
@@ -79,6 +80,7 @@ export class ConfigService implements ConfigObject {
   units: UnitType;
   scale: number;
   spacing: number;
+  sheetEdgeMargin: number;
   curveTolerance: number;
   clipperScale: number;
   rotations: number;
@@ -114,6 +116,7 @@ export class ConfigService implements ConfigObject {
     this.units = this.config.units;
     this.scale = this.config.scale;
     this.spacing = this.config.spacing;
+    this.sheetEdgeMargin = this.config.sheetEdgeMargin;
     this.curveTolerance = this.config.curveTolerance;
     this.clipperScale = this.config.clipperScale;
     this.rotations = this.config.rotations;
@@ -186,6 +189,7 @@ export class ConfigService implements ConfigObject {
    * @param value - The value to set
    */
   private setConfigValue<K extends keyof UIConfig>(key: K, value: UIConfig[K]): void {
+    if (key === "sheetEdgeMargin" && (typeof value !== "number" || !Number.isFinite(value) || value < 0)) return;
     // Use Object.assign to bypass strict type checking for dynamic assignment
     Object.assign(this.config, { [key]: value });
     Object.assign(this, { [key]: value });
@@ -198,6 +202,7 @@ export class ConfigService implements ConfigObject {
     this.units = this.config.units;
     this.scale = this.config.scale;
     this.spacing = this.config.spacing;
+    this.sheetEdgeMargin = this.config.sheetEdgeMargin;
     this.curveTolerance = this.config.curveTolerance;
     this.clipperScale = this.config.clipperScale;
     this.rotations = this.config.rotations;

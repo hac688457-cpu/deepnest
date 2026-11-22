@@ -1,0 +1,13 @@
+# CNC migration to 1.6.0-beta.1
+
+Base: upstream ba057a57c54a413d83556ea29695d76f18fc3c62. Source: CNC fork b25c89cccac64373cc6dded6f145fe3122be96ba, compared to its 1.5.6 base 6a608e5.
+
+Port geometry fixes and CNC exporter independently, integrate with the 1.6 TypeScript UI and preserve upstream placement, import, export and dialog fixes. Validate unit and upstream regressions before isolated Electron and independent real-SVG/DXF geometry audits. A build is not suitable for CAM until those checks pass; no production installation is replaced.
+
+## Status: incomplete; not approved for CAM
+
+A source-mode Electron run on isolated Xvfb :160 used the W1600/H1600/D220/T9 shelf SVG in `/home/abd/Downloads/сфера/` (14 imported parts, 14 placed on two 2500 x 1250 mm sheets). With 4 mm margin and 8 mm spacing, after adding a 0.02 mm placement clearance allowance, `tests/audit-electron-cnc.py 4` using ezdxf 1.1.3 and Shapely 2.0.3 found 12 and 2 closed R12 polylines, no audit errors or overlap, minimum margins 4.018750 and 4.072829 mm, minimum gaps 8.000091 and 8.001098 mm. Combined export: 14 AC1009 polylines, no audit errors, PART_OUTLINES layer. These values apply only to this run and do not establish a clearance guarantee at arbitrary tolerances.
+
+Commands run: `npx tsc --noEmit`, `node tests/cnc-dxf.test.cjs`, `node tests/sheet-margin.test.cjs`, `node tests/placement-rotation-retry.cjs`, `node tests/rectangle-inner-nfp.cjs`, `node tests/hpgl.cjs`, `DISPLAY=:160 DEEPNEST_APP=/tmp/deepnest-v160-source DEEPNEST_TEST_ROOT=/tmp/deepnest-v160-menu node tests/electron-export-menu.cjs`, and `DISPLAY=:160 DEEPNEST_APP=/tmp/deepnest-v160-source DEEPNEST_SVG=<W1600 SVG> DEEPNEST_TEST_ROOT=/tmp/deepnest-v160-acceptance-3 node tests/electron-cnc-acceptance.cjs`. The source wrapper runs the local Electron with this worktree and `--no-sandbox` only on Xvfb. The menu test saw six visible items (upstream PLT retained) and a real per-sheet click. Electron acceptance uses mocked file dialogs; it is not evidence of native dialogs.
+
+The first shelf run, without the allowance, failed: edge 3.998750 mm. Native GTK open dialog appeared, but automation timed out before confirming import; native save remains untested. Independent chair-hole and full 32-contour fidelity, the remaining beta GUI regressions, full per-sheet/boundary combinations, and a packaged exact-HEAD acceptance run remain outstanding. The older `CNC_DXF.md` is historical and its prior-version results do not prove this port. Do not install or cut from this version until these checks pass. The existing Chrome sandbox helper is not root-owned in this environment; do not symlink it as a setuid helper.

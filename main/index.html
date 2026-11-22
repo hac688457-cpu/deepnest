@@ -41,6 +41,8 @@
           <ul class="dropdown">
             <li id="exportsvg">SVG file</li>
             <li id="exportdxf">DXF file</li>
+            <li id="exportcncdxf">CNC DXF R12 (mm)</li>
+            <li id="exportcncdxfsheets">CNC DXF R12 - one file per sheet</li>
             <li id="exportplt">PLT file</li>
             <li id="exportjson">JSON file</li>
             <!--<li id="exportgcode">GCode file</li>-->
@@ -244,6 +246,12 @@
                 data-conversion="true"
                 required
               />
+              <i><span class="unit-label">inch</span></i>
+            </dd>
+
+            <dt>Minimum sheet-edge margin</dt>
+            <dd>
+              <input type="number" min="0" step="any" data-config="sheetEdgeMargin" required />
               <i><span class="unit-label">inch</span></i>
             </dd>
 

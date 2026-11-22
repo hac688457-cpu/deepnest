@@ -111,6 +111,7 @@ declare let DeepNest: DeepNestInstance;
  * Global SvgParser instance
  */
 declare let SvgParser: SvgParserInstance;
+declare const GeometryUtil: unknown;
 
 /**
  * Get the DeepNest global with proper typing
@@ -145,6 +146,7 @@ let configService: ConfigService;
 let presetService: PresetService;
 let importService: ImportService;
 let exportService: ExportService;
+let cncDialog: ReturnType<typeof createRememberingDialog>;
 let nestingService: NestingService;
 let navigationService: NavigationService;
 let partsViewService: PartsViewService;
@@ -246,7 +248,9 @@ function updateForm(c: UIConfig): void {
 
     const value = c[key];
 
-    if (inputElement.getAttribute("data-conversion") === "true") {
+    if (key === "sheetEdgeMargin") {
+      inputElement.value = String((value as number) * (c.units === "mm" ? 25.4 : 1));
+    } else if (inputElement.getAttribute("data-conversion") === "true") {
       const scaleValue = scaleInput ? Number(scaleInput.value) : c.scale;
       inputElement.value = String((value as number) / scaleValue);
     } else if (BOOLEAN_CONFIG_KEYS.includes(key)) {
@@ -473,6 +477,15 @@ function initializeConfigForm(): void {
       // Handle boolean inputs (checkboxes)
       if (BOOLEAN_CONFIG_KEYS.includes(key)) {
         val = (inputElement as HTMLInputElement).checked;
+      }
+
+      if (key === "sheetEdgeMargin") {
+        const margin = Number(val);
+        if (!Number.isFinite(margin) || margin < 0 || String(val).trim() === "") {
+          updateForm(configService.getSync() as unknown as UIConfig);
+          return;
+        }
+        val = margin / (configService.getSync("units") === "mm" ? 25.4 : 1);
       }
 
       // Handle unit conversion
@@ -806,6 +819,8 @@ function initializeComponents(): void {
     resizeCallback: resize,
   });
 
+  cncDialog = dialog;
+
   // Initialize export service
   exportService = createExportService({
     dialog: dialog as unknown as {
@@ -935,6 +950,38 @@ function initializeExportButtons(): void {
   }
 
   // DXF export
+  const cncExport = async (separate: boolean) => {
+    const selectedNests = getDeepNest().nests.filter((n) => n.selected);
+    const selected = selectedNests[selectedNests.length - 1];
+    if (!selected) { message("Select a nesting result first", true); return; }
+    try {
+      const make = require("./cnc-dxf.js") as {
+        (nest: unknown, parts: unknown, scale: number, borders: boolean, gap: number, parser: unknown, geometry: unknown): string;
+        sheets(nest: unknown, parts: unknown, scale: number, borders: boolean, parser: unknown, geometry: unknown): string[];
+      };
+      const scale = configService.getSync("scale");
+      const borders = configService.getSync("exportWithSheetBoundboarders");
+      const parts = getDeepNest().parts;
+      if (separate) {
+        const result = await cncDialog.showOpenDialog({title: "Choose folder for CNC DXF sheets", properties: ["openDirectory", "createDirectory"]});
+        if (result.canceled || !result.filePaths.length) return;
+        const sheets = make.sheets(selected, parts, scale, borders, window.SvgParser, GeometryUtil);
+        const save = require("./cnc-dxf-save.js") as (directory: string, sheets: string[]) => void;
+        save(result.filePaths[0], sheets);
+        message(`Exported ${sheets.length} CNC DXF sheet file(s)`);
+      } else {
+        let filename = cncDialog.showSaveDialogSync({title: "Export CNC DXF R12 (mm)", filters: [{name: "DXF", extensions: ["dxf"]}]});
+        if (!filename) return;
+        if (!filename.toLowerCase().endsWith(".dxf")) filename += ".dxf";
+        const gap = configService.getSync("exportWithSheetsSpace") ? configService.getSync("exportWithSheetsSpaceValue") : 0;
+        const data = make(selected, parts, scale, borders, gap, window.SvgParser, GeometryUtil);
+        (fs as {writeFileSync: (path: string, data: string, options: object) => void}).writeFileSync(filename, data, {flag: "wx"});
+      }
+    } catch (error) { message("CNC DXF export failed: " + String(error), true); }
+  };
+  getElement<HTMLElement>("#exportcncdxf")!.onclick = () => { void cncExport(false); };
+  getElement<HTMLElement>("#exportcncdxfsheets")!.onclick = () => { void cncExport(true); };
+
   const exportDxfBtn = getElement<HTMLElement>("#exportdxf");
   if (exportDxfBtn) {
     exportDxfBtn.onclick = async () => {
