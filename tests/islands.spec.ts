@@ -14,7 +14,7 @@ test("An outline inside a hole is its own part", async () => {
   const userData = await mkdtemp(path.join(tmpdir(), "deepnest-test-"));
   await writeFile(
     path.join(userData, "settings.json"),
-    JSON.stringify({ showNotifications: false }),
+    JSON.stringify({ showNotifications: false, sheetEdgeMargin: 0 }),
   );
   const app = await electron.launch({
     args: ["main.js", `--user-data-dir=${userData}`],

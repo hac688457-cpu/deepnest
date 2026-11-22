@@ -39,6 +39,11 @@ for (const d of ['home','config','cache','run']) fs.mkdirSync(path.join(root,d),
   }
   if (process.env.MIXED) assert.equal(await page.evaluate(()=>window.DeepNest.parts.length), 32);
   console.log('Imported:',await page.evaluate(()=>window.DeepNest.parts.length));
+  if (process.env.IMPORT_ONLY) {
+    const parts = await page.evaluate(() => window.DeepNest.parts.map(p => ({elements:p.svgelements.map(e => e.tagName), children:(p.polygontree.children || []).length})));
+    console.log('IMPORT_CONTOURS', JSON.stringify({parts:parts.length, elements:parts.reduce((n,p)=>n+p.elements.length,0), children:parts.reduce((n,p)=>n+p.children,0)}));
+    return;
+  }
   await page.click('#addsheet'); await page.fill('#sheetwidth','2500'); await page.fill('#sheetheight','1250'); await page.click('#confirmsheet');
   if (!process.env.MIXED && !process.env.MULTI) {
     const input = page.locator('#parts tbody input[type=number]').last();
